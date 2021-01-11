@@ -8,71 +8,42 @@ const inputExpense = document.querySelector('#gasto');
 const inputAmount = document.querySelector('#cantidad');
 const ulExpenses = document.querySelector('#gastos ul');
 
-let expensesList = [];
-let expensesAmount = 0;
+let budget;
+
 
 // Classes
 class Budget {
     constructor(amount) {
         this.amount = amount;
-        this.restante = amount;
+        this.left = amount;
+        this.expenses = [];
+        this.expensesList = [];
     };
 
-    printBudget() {
-        // PRINT BUDGET
-        budgetDOM.textContent = `${this.amount}.00`
-        restanteDOM.textContent = `${this.amount}.00`
+    addExpense(expense) {
+        this.expenses = [...this.expenses, expense];
+        this.calculateLeftBudget();
     };
 
-    updateBudget(newExpensesAmount) {
-
-
-        const budgetWarning = (this.amount / 100) * 50;
-        const budgetAlert = (this.amount / 100) * 75;
-        if (newExpensesAmount > budgetAlert) {
-            restanteDiv.classList.remove('alert-success', 'alert-warning');
-            restanteDiv.classList.add('alert-danger');
-        } else if (newExpensesAmount > budgetWarning) {
-            restanteDiv.classList.remove('alert-success', 'alert-danger');
-            restanteDiv.classList.add('alert-warning');
-        } else {
-            restanteDiv.classList.remove('alert-danger', 'alert-warning');
-            restanteDiv.classList.add('alert-success');
-        }
-
-        restanteDOM.textContent = `${this.amount - newExpensesAmount}.00`
-
+    deleteExpense(id, deleted) {
+        const deletedItem = deleted[0];
+        this.expenses = this.expenses.filter(expense => expense !== deletedItem.amount)
     };
 
-    calculateBudget() {
-
-    }
+    calculateLeftBudget() {
+        const sumExpenses = this.expenses.reduce((acc, ex) => acc + ex, 0);
+        this.left = this.amount - sumExpenses;
+    };
 
 };
 
-class Expenses {
-    constructor(description, amount, id) {
-        this.description = description;
-        this.amount = amount;
-        this.id = id;
+class UI {
+    printBudget(budget) {
+        budgetDOM.textContent = `${budget.amount}.00`
+        restanteDOM.textContent = `${budget.amount}.00`
     };
 
-    expenseAddedConfirmation(message, type) {
-        const divMessage = document.createElement('div');
-        divMessage.classList.add('text-center', 'alert');
-        if (type === 'error') {
-            divMessage.classList.add('alert-danger');
-        } else {
-            divMessage.classList.add('alert-success');
-        }
-        divMessage.textContent = message;
-        document.querySelector('.primario').insertBefore(divMessage, form);
-        setTimeout(() => {
-            document.querySelector('.primario .alert').remove();
-        }, 3000);
-    };
-
-    addExpenseToList(expensesList) {
+    updateList(expensesList) {
         while (ulExpenses.firstChild) {
             ulExpenses.removeChild(ulExpenses.firstChild)
         };
@@ -94,7 +65,39 @@ class Expenses {
 
     };
 
+    expenseAddedConfirmation(message, type) {
+        const divMessage = document.createElement('div');
+        divMessage.classList.add('text-center', 'alert');
+        if (type === 'error') {
+            divMessage.classList.add('alert-danger');
+        } else {
+            divMessage.classList.add('alert-success');
+        }
+        divMessage.textContent = message;
+        document.querySelector('.primario').insertBefore(divMessage, form);
+        setTimeout(() => {
+            document.querySelector('.primario .alert').remove();
+        }, 3000);
+    };
+
+    updateBudget(left, budget) {
+        if ((budget / 4) > left) {
+            restanteDiv.classList.remove('alert-success', 'alert-warning');
+            restanteDiv.classList.add('alert-danger');
+        } else if ((budget / 2) > left) {
+            restanteDiv.classList.remove('alert-success', 'alert-danger');
+            restanteDiv.classList.add('alert-warning');
+        } else {
+            restanteDiv.classList.remove('alert-danger', 'alert-warning');
+            restanteDiv.classList.add('alert-success');
+        }
+        restanteDOM.textContent = `${left}.00`
+    };
+
+
 };
+
+const ui = new UI();
 
 // Listeners
 const listeners = () => {
@@ -102,18 +105,21 @@ const listeners = () => {
     form.addEventListener('submit', addExpense);
 };
 
-
-
 // Functions
 const addExpense = (e) => {
     e.preventDefault();
     if (inputExpense.value != '' && inputAmount.value != '') {
-        const newExpense = new Expenses(inputExpense.value, inputAmount.value, Date.now());
-        newExpense.expenseAddedConfirmation('Gasto agregado correctamente', 'correcto');
-        expensesList = [...expensesList, newExpense];
-        newExpense.addExpenseToList(expensesList);
-        expensesAmount += Number(newExpense.amount);
-        budget.updateBudget(expensesAmount);
+        // Generate an array of expenses object
+        const newExpense = {
+            description: inputExpense.value,
+            amount: Number(inputAmount.value),
+            id: Date.now()
+        }
+        budget.expensesList = [...budget.expensesList, newExpense]
+        ui.expenseAddedConfirmation('Gasto agregado correctamente', 'correcto');
+        ui.updateList(budget.expensesList);
+        budget.addExpense(newExpense.amount)
+        ui.updateBudget(budget.left, budget.amount);
 
     } else {
         // Queda pendiente la validación
@@ -124,11 +130,14 @@ const addExpense = (e) => {
     inputExpense.value = '';
 };
 
-
 const deleteExpense = (e) => {
     const currentItemId = e.target.parentElement.dataset.id;
-    expensesList = expensesList.filter(expense => expense.id.toString() !== currentItemId);
-    newExpense.addExpenseToList(expensesList);
+    const deleted = budget.expensesList.filter(expense => expense.id.toString() === currentItemId);
+    budget.expensesList = budget.expensesList.filter(expense => expense.id.toString() !== currentItemId);
+
+    ui.updateList(budget.expensesList);
+    budget.deleteExpense(currentItemId, deleted);
+    ui.updateBudget(budget.left, budget.amount);
 }
 
 const getBudget = () => {
@@ -136,8 +145,8 @@ const getBudget = () => {
     if (isNaN(enteredBudget) || enteredBudget <= 0) {
         window.location.reload();
     }
-    const budget = new Budget(enteredBudget);
-    budget.printBudget();
+    budget = new Budget(enteredBudget);
+    ui.printBudget(budget);
 };
 
 
