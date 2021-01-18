@@ -16,17 +16,13 @@
 
 - [x] When added a new gasto, show a confirm response to the user
 
-- [ ] Substract the new gasto from the restante, budget always mantains its value 
+- [x] Substract the new gasto from the restante, budget always mantains its value 
 
 - [x] When the restante is less than the 50% of the gasto turn the field into yellow
 
 - [x] When the restante is less than the 75% of the gasto turn the field into red
 
-- [ ] When the restante is 0 show a text telling the user. 
-
-- [ ] When the budget is over, block the form to add new gastos
-
-- [ ] The user can delete gastos from the budget and the restante field always get updated
+- [x] The user can delete gastos from the budget and the restante field always get updated
 
 ### Solving the problem
 
